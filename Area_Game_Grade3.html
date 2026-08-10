@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trò Chơi Toán 3 - Ôn Tập Đơn Vị Đo Diện Tích</title>
+  <style>
+    :root {
+      --primary-bg: #e0f7fa;
+      --card-bg: #ffffff;
+      --accent-yellow: #ffca28;
+      --accent-orange: #ff9800;
+      --accent-blue: #0288d1;
+      --accent-green: #4caf50;
+      --accent-red: #f44336;
+      --text-main: #263238;
+      --shadow-color: rgba(0,0,0,0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Fredoka', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background-color: #1a237e;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 10px;
+    }
+
+    /* Màn hình 16:9 Chuẩn */
+    .game-viewport {
+      width: 100vw;
+      height: 56.25vw;
+      max-width: 1120px;
+      max-height: 630px;
+      background: linear-gradient(135deg, #b2ebf2 0%, #80deea 100%);
+      border-radius: 24px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4), inset 0 0 0 6px #ffffff;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation / Stats */
+    .header-bar {
+      height: 60px;
+      padding: 10px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(5px);
+      border-bottom: 3px solid #b2dfdb;
+    }
+
+    .level-badge {
+      background: var(--accent-orange);
+      color: white;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 0.95rem;
+      box-shadow: 0 3px 0 #e65100;
+    }
+
+    .progress-box {
+      flex-grow: 1;
+      max-width: 300px;
+      margin: 0 20px;
+      background: #e0e0e0;
+      height: 16px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 2px solid #fff;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4caf50, #81c784);
+      transition: width 0.4s ease;
+    }
+
+    .score-board {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--accent-blue);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Screens Container */
+    .screen {
+      flex: 1;
+      display: none;
+      padding: 20px 30px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* Typography & Controls */
+    h1 {
+      font-size: 2.2rem;
+      color: #01579b;
+      text-shadow: 2px 2px 0px #fff;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+      color: #0277bd;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .btn {
+      background: linear-gradient(180deg, #ffca28 0%, #ffa000 100%);
+      color: #3e2723;
+      border: none;
+      padding: 12px 32px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #ff6f00, 0 8px 15px var(--shadow-color);
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 0 #ff6f00, 0 10px 20px var(--shadow-color);
+    }
+
+    .btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #ff6f00;
+    }
+
+    .btn-secondary {
+      background: linear-gradient(180deg, #29b6f6 0%, #0288d1 100%);
+      color: white;
+      box-shadow: 0 5px 0 #01579b;
+    }
+
+    /* Robot Companion */
+    .robot-container {
+      position: absolute;
+      bottom: 15px;
+      left: 20px;
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .robot-svg {
+      width: 90px;
+      height: 110px;
+      filter: drop-shadow(0 5px 5px rgba(0,0,0,0.2));
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .speech-bubble {
+      background: white;
+      border-radius: 18px;
+      padding: 10px 16px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #37474f;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      max-width: 260px;
+      position: relative;
+      border: 2px solid #80deea;
+      margin-bottom: 25px;
+      animation: floatBubble 3s ease-in-out infinite;
+    }
+
+    .speech-bubble::before {
+      content: '';
+      position: absolute;
+      bottom: 10px;
+      left: -10px;
+      width: 0;
+      height: 0;
+      border-top: 8px solid transparent;
+      border-right: 12px solid white;
+      border-bottom: 8px solid transparent;
+    }
+
+    @keyframes floatBubble {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    /* Question Cards & Mechanics */
+    .question-card {
+      background: white;
+      width: 100%;
+      max-width: 820px;
+      height: 360px;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .question-title {
+      font-size: 1.25rem;
+      color: #1565c0;
+      font-weight: bold;
+      text-align: center;
+      width: 100%;
+    }
+
+    /* Option Grid (Trắc nghiệm) */
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .option-btn {
+      background: #f5f5f5;
+      border: 3px solid #e0e0e0;
+      border-radius: 16px;
+      padding: 14px 20px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #37474f;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .option-btn:hover {
+      background: #e1f5fe;
+      border-color: #29b6f6;
+      transform: scale(1.02);
+    }
+
+    .option-btn.selected {
+      background: #fff9c4;
+      border-color: #fbc02d;
+    }
+
+    .option-btn.correct {
+      background: #c8e6c9 !important;
+      border-color: #4caf50 !important;
+      color: #1b5e20;
+    }
+
+    .option-btn.wrong {
+      background: #ffcdd2 !important;
+      border-color: #ef5350 !important;
+      color: #b71c1c;
+    }
+
+    /* Matching Question (Nối) */
+    .matching-container {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      gap: 40px;
+      margin: 15px 0;
+    }
+
+    .matching-column {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .match-card {
+      background: #f8f9fa;
+      border: 3px solid #cfd8dc;
+      padding: 12px;
+      border-radius: 14px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.05rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .match-card.selected {
+      background: #ffe082;
+      border-color: #ffb300;
+      transform: scale(1.03);
+    }
+
+    .match-card.matched {
+      background: #c8e6c9;
+      border-color: #66bb6a;
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    /* Drag & Drop / Tap Select (Kéo thả) */
+    .drag-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .drag-items {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+    }
+
+    .draggable-card {
+      background: #ffecb3;
+      border: 3px dashed #ffa000;
+      padding: 10px 22px;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 1.2rem;
+      cursor: grab;
+      transition: all 0.2s;
+    }
+
+    .draggable-card.selected {
+      background: #ffb300;
+      color: white;
+      transform: scale(1.1);
+      border-style: solid;
+    }
+
+    .drop-targets {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .drop-box {
+      background: #eceff1;
+      border: 3px dashed #90a4ae;
+      border-radius: 16px;
+      padding: 15px;
+      min-width: 180px;
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .drop-box.hovered {
+      background: #e0f2f1;
+      border-color: #009688;
+    }
+
+    .drop-box .slot-label {
+      font-size: 0.9rem;
+      color: #78909c;
+    }
+
+    /* Short Answer Question */
+    .short-answer-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .number-input {
+      font-size: 2rem;
+      padding: 10px 20px;
+      width: 160px;
+      text-align: center;
+      border: 4px solid #0288d1;
+      border-radius: 16px;
+      outline: none;
+      color: #01579b;
+      font-weight: bold;
+    }
+
+    /* Modal Hướng Dẫn */
+    .modal {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 24px;
+      max-width: 550px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .modal-content ul {
+      text-align: left;
+      margin: 15px 0 25px 25px;
+      line-height: 1.6;
+      color: #455a64;
+    }
+
+    /* End Screen Badges */
+    .badge-box {
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle, #fff9c4 0%, #fbc02d 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      margin: 15px 0;
+      box-shadow: 0 8px 20px rgba(255, 193, 7, 0.4);
+      border: 4px solid #fff;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="game-viewport">
+  <!-- Top Navigation -->
+  <div class="header-bar">
+    <div id="level-tag" class="level-badge">Mức 1: Nhận biết</div>
+    <div class="progress-box">
+      <div id="progress-bar" class="progress-bar"></div>
+    </div>
+    <div class="score-board">
+      <span>⭐</span> <span id="score-text">0 điểm</span>
+    </div>
+  </div>
+
+  <!-- Screen 1: Start -->
+  <div id="start-screen" class="screen active">
+    <h1>BÉ GIỎI ĐO DIỆN TÍCH</h1>
+    <h2>Môn Toán Lớp 3 - Ôn tập cm²</h2>
+    <div style="display: flex; gap: 15px; margin-top: 20px;">
+      <button class="btn" onclick="openInstructions()">📖 Hướng Dẫn</button>
+      <button class="btn btn-secondary" onclick="startGame()">🚀 Bắt Đầu Chơi</button>
+    </div>
+  </div>
+
+  <!-- Screen 2: Game Stage -->
+  <div id="game-screen" class="screen">
+    <div class="question-card">
+      <div id="question-title" class="question-title">Đang tải câu hỏi...</div>
+      <div id="question-body" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1;">
+        <!-- Dynamic Question Content -->
+      </div>
+      <button id="check-btn" class="btn" style="padding: 10px 40px; font-size: 1.1rem;" onclick="checkAnswer()">Kiểm Tra</button>
+    </div>
+  </div>
+
+  <!-- Screen 3: Result -->
+  <div id="result-screen" class="screen">
+    <h1>HOÀN THÀNH THỬ THÁCH!</h1>
+    <div id="badge-icon" class="badge-box">🏆</div>
+    <h2 id="final-score-text">Bạn đã đạt 100/100 điểm</h2>
+    <p id="feedback-eval" style="font-size: 1.1rem; color: #455a64; margin-bottom: 20px;">Em làm bài rất xuất sắc!</p>
+    <button class="btn" onclick="restartGame()">🔄 Chơi Lại Từ Đầu</button>
+  </div>
+
+  <!-- Robot Companion -->
+  <div class="robot-container">
+    <svg class="robot-svg" id="robot-svg" viewBox="0 0 100 120">
+      <!-- Robot Antenna -->
+      <line x1="50" y1="20" x2="50" y2="5" stroke="#78909c" stroke-width="4"/>
+      <circle cx="50" cy="5" r="5" fill="#ff4081" id="robot-light"/>
+      <!-- Head -->
+      <rect x="20" y="20" width="60" height="45" rx="10" fill="#0288d1" stroke="#01579b" stroke-width="3"/>
+      <!-- Face screen -->
+      <rect x="28" y="28" width="44" height="28" rx="6" fill="#263238"/>
+      <!-- Eyes -->
+      <circle cx="40" cy="40" r="5" fill="#00e676" id="eye-left"/>
+      <circle cx="60" cy="40" r="5" fill="#00e676" id="eye-right"/>
+      <!-- Mouth -->
+      <path d="M 40 48 Q 50 54 60 48" stroke="#fff" stroke-width="2.5" fill="none" id="robot-mouth"/>
+      <!-- Body -->
+      <rect x="25" y="70" width="50" height="40" rx="8" fill="#0288d1" stroke="#01579b" stroke-width="3"/>
+      <circle cx="50" cy="90" r="8" fill="#ffca28"/>
+    </svg>
+    <div id="speech-bubble" class="speech-bubble">Xin chào! Tớ là Rô-bốt Bíp Bíp. Hãy cùng tớ vượt qua các thử thách toán học nhé!</div>
+  </div>
+</div>
+
+<!-- Modal Hướng Dẫn -->
+<div id="instruction-modal" class="modal">
+  <div class="modal-content">
+    <h2>📖 Hướng Dẫn Trò Chơi</h2>
+    <ul>
+      <li>Trò chơi gồm <b>6 thử thách</b> tăng dần từ Nhận biết đến Vận dụng.</li>
+      <li><b>Trắc nghiệm:</b> Bấm chọn 1 đáp án đúng nhất.</li>
+      <li><b>Nối:</b> Bấm chọn 1 ô cột trái rồi bấm chọn 1 ô tương ứng cột phải.</li>
+      <li><b>Kéo thả / Chọn thẻ:</b> Kéo thẻ vào ô trống HOẶC Bấm vào thẻ rồi bấm vào ô đích.</li>
+      <li><b>Trả lời ngắn:</b> Nhập số kết quả vào ô trống.</li>
+    </ul>
+    <button class="btn" onclick="closeInstructions()">Đã Hiểu!</button>
+  </div>
+</div>
+
+<script>
+  // --- SOUND EFFECTS (Web Audio API) ---
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  let audioCtx;
+
+  function initAudio() {
+    if (!audioCtx) audioCtx = new AudioContext();
+  }
+
+  function playSound(type) {
+    try {
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'correct') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+      } else if (type === 'wrong') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(164.81, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.35);
+      } else if (type === 'win') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(554.37, audioCtx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.2);
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.6);
+      }
+    } catch(e) { console.log('Audio error:', e); }
+  }
+
+  // --- GAME QUESTIONS DATA (Grade 3 Area - cm2) ---
+  const questions = [
+    {
+      id: 1,
+      level: "Mức 1: Nhận biết",
+      type: "mcq",
+      title: "Xăng-ti-mét vuông là diện tích của hình vuông có cạnh dài bao nhiêu?",
+      options: ["1 mm", "1 cm", "1 dm", "1 m"],
+      answer: 1,
+      hint: "Xăng-ti-mét vuông là diện tích hình vuông cạnh dài 1 cm đấy!"
+    },
+    {
+      id: 2,
+      level: "Mức 1: Nhận biết",
+      type: "mcq",
+      title: "Xăng-ti-mét vuông được viết tắt là gì?",
+      options: ["cm", "cm2", "cm²", "m²"],
+      answer: 2,
+      hint: "Ký hiệu xăng-ti-mét vuông có chữ cm và số 2 nhỏ phía trên bên phải (cm²)!"
+    },
+    {
+      id: 3,
+      level: "Mức 2: Thông hiểu",
+      type: "matching",
+      title: "Nối phép tính hoặc hình vẽ với diện tích tương ứng:",
+      pairs: [
+        { left: "Hình chữ nhật: 4 cm × 3 cm", right: "12 cm²" },
+        { left: "Hình vuông cạnh 5 cm", right: "25 cm²" },
+        { left: "18 cm² + 12 cm²", right: "30 cm²" }
+      ],
+      hint: "Hãy tính nhẩm diện tích bằng cách nhân chiều dài với chiều rộng nhé!"
+    },
+    {
+      id: 4,
+      level: "Mức 2: Thông hiểu",
+      type: "dragdrop",
+      title: "Kéo (hoặc Bấm chọn) dấu thích hợp vào ô trống:",
+      items: [">", "<", "="],
+      slots: [
+        { label: "25 cm² + 5 cm²  [ ? ]  32 cm²", target: "<" },
+        { label: "40 cm² - 10 cm²  [ ? ]  30 cm²", target: "=" }
+      ],
+      hint: "Tính kết quả phép tính bên trái rồi so sánh với số bên phải nhé!"
+    },
+    {
+      id: 5,
+      level: "Mức 3: Vận dụng",
+      type: "short_answer",
+      title: "Bài toán: Rô-bốt cắt một con tem hình chữ nhật có chiều dài 5 cm và chiều rộng 3 cm. Diện tích con tem đó là bao nhiêu cm²?",
+      answer: "15",
+      hint: "Diện tích hình chữ nhật = Chiều dài × Chiều rộng em nhé!"
+    },
+    {
+      id: 6,
+      level: "Mức 3: Vận dụng",
+      type: "short_answer",
+      title: "Bài toán: Một mảnh giấy hình vuông có diện tích là 36 cm². Hỏi cạnh của mảnh giấy hình vuông đó dài bao nhiêu cm?",
+      answer: "6",
+      hint: "Diện tích hình vuông = Cạnh × Cạnh. Mấy nhân với chính nó bằng 36 nhỉ?"
+    }
+  ];
+
+  // --- GAME STATE ---
+  let currentIdx = 0;
+  let score = 0;
+  let selectedMatchLeft = null;
+  let userMatches = {};
+  let selectedDragItem = null;
+  let userDragAnswers = {};
+
+  // --- UI CONTROLS ---
+  function openInstructions() {
+    document.getElementById('instruction-modal').classList.add('active');
+  }
+
+  function closeInstructions() {
+    document.getElementById('instruction-modal').classList.remove('active');
+  }
+
+  function startGame() {
+    currentIdx = 0;
+    score = 0;
+    document.getElementById('start-screen').classList.remove('active');
+    document.getElementById('result-screen').classList.remove('active');
+    document.getElementById('game-screen').classList.add('active');
+    loadQuestion();
+  }
+
+  function setRobotState(mood, text) {
+    const bubble = document.getElementById('speech-bubble');
+    const mouth = document.getElementById('robot-mouth');
+    const light = document.getElementById('robot-light');
+    const robotSvg = document.getElementById('robot-svg');
+
+    bubble.innerText = text;
+
+    if (mood === 'happy') {
+      mouth.setAttribute('d', 'M 35 45 Q 50 60 65 45');
+      light.setAttribute('fill', '#00e676');
+      robotSvg.style.transform = 'scale(1.1) rotate(5deg)';
+      setTimeout(() => robotSvg.style.transform = 'scale(1) rotate(0deg)', 400);
+    } else if (mood === 'sad') {
+      mouth.setAttribute('d', 'M 35 52 Q 50 42 65 52');
+      light.setAttribute('fill', '#ff1744');
+      robotSvg.style.transform = 'translateX(-5px)';
+      setTimeout(() => robotSvg.style.transform = 'translateX(0)', 400);
+    } else {
+      mouth.setAttribute('d', 'M 40 48 Q 50 54 60 48');
+      light.setAttribute('fill', '#ff4081');
+    }
+  }
+
+  function updateHeader() {
+    const q = questions[currentIdx];
+    document.getElementById('level-tag').innerText = q.level;
+    document.getElementById('score-text').innerText = `${score} điểm`;
+    const progress = ((currentIdx) / questions.length) * 100;
+    document.getElementById('progress-bar').style.width = `${progress}%`;
+  }
+
+  // --- RENDER QUESTION ---
+  function loadQuestion() {
+    updateHeader();
+    const q = questions[currentIdx];
+    document.getElementById('question-title').innerText = `Thử thách ${q.id}: ${q.title}`;
+    const body = document.getElementById('question-body');
+    body.innerHTML = '';
+
+    setRobotState('normal', q.hint);
+
+    if (q.type === 'mcq') {
+      renderMCQ(q, body);
+    } else if (q.type === 'matching') {
+      renderMatching(q, body);
+    } else if (q.type === 'dragdrop') {
+      renderDragDrop(q, body);
+    } else if (q.type === 'short_answer') {
+      renderShortAnswer(q, body);
+    }
+
+    document.getElementById('check-btn').style.display = 'inline-flex';
+  }
+
+  // MCQ Renderer
+  let selectedMCQ = null;
+  function renderMCQ(q, container) {
+    selectedMCQ = null;
+    const grid = document.createElement('div');
+    grid.className = 'options-grid';
+
+    q.options.forEach((opt, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerText = opt;
+      btn.onclick = () => {
+        document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedMCQ = idx;
+      };
+      grid.appendChild(btn);
+    });
+    container.appendChild(grid);
+  }
+
+  // Matching Renderer
+  function renderMatching(q, container) {
+    selectedMatchLeft = null;
+    userMatches = {};
+
+    const wrap = document.createElement('div');
+    wrap.className = 'matching-container';
+
+    const colLeft = document.createElement('div');
+    colLeft.className = 'matching-column';
+    const colRight = document.createElement('div');
+    colRight.className = 'matching-column';
+
+    // Shuffle right items display
+    const rightShuffled = [...q.pairs].sort(() => Math.random() - 0.5);
+
+    q.pairs.forEach((pair, idx) => {
+      const cardL = document.createElement('div');
+      cardL.className = 'match-card';
+      cardL.innerText = pair.left;
+      cardL.dataset.id = idx;
+      cardL.onclick = () => {
+        if (cardL.classList.contains('matched')) return;
+        document.querySelectorAll('.matching-column:first-child .match-card').forEach(c => c.classList.remove('selected'));
+        cardL.classList.add('selected');
+        selectedMatchLeft = idx;
+      };
+      colLeft.appendChild(cardL);
+    });
+
+    rightShuffled.forEach((pair) => {
+      const cardR = document.createElement('div');
+      cardR.className = 'match-card';
+      cardR.innerText = pair.right;
+      cardR.dataset.val = pair.right;
+      cardR.onclick = () => {
+        if (selectedMatchLeft !== null && !cardR.classList.contains('matched')) {
+          userMatches[selectedMatchLeft] = pair.right;
+          // Highlight
+          const leftCard = colLeft.querySelector(`[data-id="${selectedMatchLeft}"]`);
+          leftCard.classList.remove('selected');
+          leftCard.classList.add('matched');
+          cardR.classList.add('matched');
+          selectedMatchLeft = null;
+        }
+      };
+      colRight.appendChild(cardR);
+    });
+
+    wrap.appendChild(colLeft);
+    wrap.appendChild(colRight);
+    container.appendChild(wrap);
+  }
+
+  // Drag & Drop / Tap-Select Renderer
+  function renderDragDrop(q, container) {
+    selectedDragItem = null;
+    userDragAnswers = {};
+
+    const wrap = document.createElement('div');
+    wrap.className = 'drag-container';
+
+    const itemsBox = document.createElement('div');
+    itemsBox.className = 'drag-items';
+
+    q.items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'draggable-card';
+      card.innerText = item;
+      card.draggable = true;
+
+      // Click to select
+      card.onclick = () => {
+        document.querySelectorAll('.draggable-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedDragItem = item;
+      };
+
+      // HTML5 Drag
+      card.ondragstart = (e) => {
+        e.dataTransfer.setData('text', item);
+        selectedDragItem = item;
+      };
+
+      itemsBox.appendChild(card);
+    });
+
+    const targetsBox = document.createElement('div');
+    targetsBox.className = 'drop-targets';
+
+    q.slots.forEach((slot, idx) => {
+      const box = document.createElement('div');
+      box.className = 'drop-box';
+      box.dataset.idx = idx;
+
+      const label = document.createElement('div');
+      label.className = 'slot-label';
+      label.innerText = slot.label;
+
+      const valDisplay = document.createElement('div');
+      valDisplay.style.fontSize = '1.4rem';
+      valDisplay.style.fontWeight = 'bold';
+      valDisplay.style.color = '#0288d1';
+      valDisplay.innerText = '?';
+
+      box.appendChild(label);
+      box.appendChild(valDisplay);
+
+      // Tap to place
+      box.onclick = () => {
+        if (selectedDragItem) {
+          userDragAnswers[idx] = selectedDragItem;
+          valDisplay.innerText = selectedDragItem;
+        }
+      };
+
+      // Drag Over / Drop
+      box.ondragover = (e) => e.preventDefault();
+      box.ondrop = (e) => {
+        e.preventDefault();
+        const data = e.dataTransfer.getData('text');
+        userDragAnswers[idx] = data;
+        valDisplay.innerText = data;
+      };
+
+      targetsBox.appendChild(box);
+    });
+
+    wrap.appendChild(itemsBox);
+    wrap.appendChild(targetsBox);
+    container.appendChild(wrap);
+  }
+
+  // Short Answer Renderer
+  function renderShortAnswer(q, container) {
+    const wrap = document.createElement('div');
+    wrap.className = 'short-answer-box';
+
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.className = 'number-input';
+    input.id = 'short-input';
+    input.placeholder = '?';
+
+    wrap.appendChild(input);
+    container.appendChild(wrap);
+  }
+
+  // --- CHECK ANSWER LOGIC ---
+  function checkAnswer() {
+    const q = questions[currentIdx];
+    let isCorrect = false;
+
+    if (q.type === 'mcq') {
+      if (selectedMCQ === null) {
+        alert('Em hãy chọn một đáp án nhé!');
+        return;
+      }
+      isCorrect = (selectedMCQ === q.answer);
+      const btns = document.querySelectorAll('.option-btn');
+      btns.forEach((b, i) => {
+        if (i === q.answer) b.classList.add('correct');
+        else if (i === selectedMCQ) b.classList.add('wrong');
+      });
+    } else if (q.type === 'matching') {
+      if (Object.keys(userMatches).length < q.pairs.length) {
+        alert('Em hãy nối đủ tất cả các ô nhé!');
+        return;
+      }
+      isCorrect = true;
+      q.pairs.forEach((pair, idx) => {
+        if (userMatches[idx] !== pair.right) isCorrect = false;
+      });
+    } else if (q.type === 'dragdrop') {
+      if (Object.keys(userDragAnswers).length < q.slots.length) {
+        alert('Em hãy điền dấu vào tất cả các ô trống nhé!');
+        return;
+      }
+      isCorrect = true;
+      q.slots.forEach((slot, idx) => {
+        if (userDragAnswers[idx] !== slot.target) isCorrect = false;
+      });
+    } else if (q.type === 'short_answer') {
+      const val = document.getElementById('short-input').value.trim();
+      if (!val) {
+        alert('Em hãy nhập kết quả vào ô trống nhé!');
+        return;
+      }
+      isCorrect = (val === q.answer);
+    }
+
+    // Evaluation feedback
+    if (isCorrect) {
+      playSound('correct');
+      score += 15;
+      setRobotState('happy', 'Xuất sắc! Em làm đúng rồi 🎉');
+    } else {
+      playSound('wrong');
+      setRobotState('sad', 'Chưa chính xác rồi. Cố gắng ở câu tiếp theo nhé! 💪');
+    }
+
+    document.getElementById('check-btn').style.display = 'none';
+
+    setTimeout(() => {
+      currentIdx++;
+      if (currentIdx < questions.length) {
+        loadQuestion();
+      } else {
+        showResults();
+      }
+    }, 1800);
+  }
+
+  // --- SHOW FINAL RESULTS ---
+  function showResults() {
+    playSound('win');
+    document.getElementById('game-screen').classList.remove('active');
+    document.getElementById('result-screen').classList.add('active');
+    document.getElementById('progress-bar').style.width = '100%';
+
+    const finalScore = score;
+    document.getElementById('final-score-text').innerText = `Em đạt được ${finalScore} / 90 điểm!`;
+
+    const badgeIcon = document.getElementById('badge-icon');
+    const evalText = document.getElementById('feedback-eval');
+
+    if (finalScore >= 80) {
+      badgeIcon.innerText = '🥇';
+      evalText.innerText = 'Xuất sắc! Em là Nhà Thông Thái Đo Diện Tích!';
+      setRobotState('happy', 'Chúc mừng em! Em quá xuất sắc luôn 🏆');
+    } else if (finalScore >= 50) {
+      badgeIcon.innerText = '🥈';
+      evalText.innerText = 'Rất tốt! Em đã nắm vững các kiến thức đơn vị diện tích!';
+      setRobotState('happy', 'Chúc mừng em nhé! Làm bài rất tốt!');
+    } else {
+      badgeIcon.innerText = '🥉';
+      evalText.innerText = 'Cố gắng lên! Em hãy chơi lại để đạt điểm cao hơn nhé!';
+      setRobotState('normal', 'Em hãy ôn lại bài và thử lại cùng tớ nhé!');
+    }
+  }
+
+  function restartGame() {
+    startGame();
+  }
+</script>
+</body>
+</html>
