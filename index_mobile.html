@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Learning Game - Đọc viết số có nhiều chữ số</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;font-family:"Segoe UI",Arial,Tahoma,sans-serif;background:#eef6ff;color:#24324a;overflow:hidden}
+button,input{font:inherit}
+button{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.game-wrap{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;padding:12px}
+.game-container{
+  touch-action:manipulation;
+  position:relative;width:min(960px,96vw);aspect-ratio:16/9;max-height:96vh;
+  background:#fff;border:4px solid #bfdbfe;border-radius:24px;overflow:hidden;
+  box-shadow:0 18px 50px rgba(30,64,175,.15);display:flex;flex-direction:column;
+}
+header{
+  height:64px;flex:0 0 64px;border-bottom:1px solid #dbeafe;background:#fff;
+  display:flex;align-items:center;justify-content:space-between;padding:0 18px;gap:12px;
+}
+.player{font-weight:800;color:#3f246e;font-size:1rem}
+.header-right{display:flex;gap:8px;align-items:center}
+.badge{border:1px solid #dbeafe;border-radius:999px;padding:8px 13px;background:#f8fbff;font-weight:800;white-space:nowrap}
+.timer{color:#047857;background:#ecfdf5}
+.stars{color:#9a6700;background:#fffbeb}
+.score{color:#1d4ed8;background:#eff6ff}
+.screen{flex:1;min-height:0;position:relative;padding:22px 32px;overflow:hidden}
+.screen:before,.screen:after{content:"";position:absolute;border-radius:50%;z-index:0;pointer-events:none}
+.screen:before{width:110px;height:110px;background:#dbeafe;left:-35px;top:55px}
+.screen:after{width:105px;height:105px;background:#ffe4e8;right:-38px;bottom:70px}
+.screen>*{position:relative;z-index:1}
+.hidden{display:none!important}
+.start-screen,.instruction-screen,.summary-screen{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.math-logo{font-size:4rem;line-height:1;margin-bottom:5px}
+h1{margin:4px 0 8px;color:#7f1d1d;font-size:2.05rem;line-height:1.15}
+.subtitle{font-weight:700;color:#64748b;margin-bottom:22px}
+.name-input{
+  width:min(420px,85%);padding:14px 18px;border:2px solid #cbd5e1;border-radius:14px;
+  outline:none;text-align:center;font-size:1.05rem;background:#fff;
+}
+.name-input:focus{border-color:#60a5fa;box-shadow:0 0 0 4px #dbeafe}
+.primary-btn,.next-btn,.retry-btn{
+  border:0;border-radius:14px;padding:12px 24px;font-weight:900;transition:.15s transform,.15s box-shadow;
+}
+.primary-btn{margin-top:14px;background:#7c3aed;color:#fff;box-shadow:0 6px 0 #5b21b6}
+.primary-btn:hover,.next-btn:hover,.retry-btn:hover{transform:translateY(-2px)}
+.primary-btn:active,.next-btn:active,.retry-btn:active{transform:translateY(2px);box-shadow:none}
+.instruction-card{max-width:690px;width:90%;background:#f8fafc;border:2px solid #dbeafe;border-radius:20px;padding:20px 28px;text-align:left}
+.instruction-card h2{margin:0 0 10px;color:#7f1d1d;text-align:center}
+.instruction-card ul{margin:8px 0;padding-left:24px;line-height:1.7}
+.topline{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.q-number{font-weight:900;white-space:nowrap}
+.progress{height:10px;background:#e2e8f0;border-radius:99px;overflow:hidden;flex:1}
+.progress>div{height:100%;background:linear-gradient(90deg,#2563eb,#8b5cf6);border-radius:99px;transition:.25s}
+.attempt-label{font-weight:800;color:#92400e;white-space:nowrap}
+.question-box{
+  background:linear-gradient(135deg,#fff0f2,#ffe3e6);border:3px solid #cbd5e1;border-radius:18px;
+  padding:15px 20px;text-align:center;color:#9b1c1c;font-size:1.45rem;font-weight:800;line-height:1.85;
+  min-height:84px;display:flex;align-items:center;justify-content:center;
+}
+.type-label{text-align:center;margin:8px 0 10px;color:#64748b;font-weight:800}
+.answer-area{min-height:185px;display:flex;align-items:center;justify-content:center}
+.options{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.option{
+  min-height:58px;border:2px solid #cbd5e1;background:#fff;border-radius:14px;padding:10px 14px;
+  font-weight:800;color:#334155;transition:.15s;
+}
+.option:hover:not(:disabled){border-color:#93c5fd;background:#f8fbff}
+.option.correct{background:#dcfce7!important;border-color:#4ade80!important;color:#166534!important}
+.option.wrong{background:#fee2e2!important;border-color:#f87171!important;color:#991b1b!important}
+.option:disabled{cursor:default}
+.tf{display:flex;gap:20px;width:100%;justify-content:center}
+.tf button{width:42%;min-height:82px;border:3px solid #cbd5e1;border-radius:18px;background:#fff;font-size:1.2rem;font-weight:900}
+.tf button:first-child{color:#15803d}.tf button:last-child{color:#b91c1c}
+.fill-wrap{display:flex;gap:10px;align-items:center;justify-content:center;width:100%}
+.fill-input{width:min(440px,65%);padding:14px;border:3px solid #cbd5e1;border-radius:14px;text-align:center;font-size:1.2rem;font-weight:800;outline:none}
+.fill-input:focus{border-color:#60a5fa}
+.check-btn{padding:13px 20px;border:0;border-radius:13px;background:#2563eb;color:#fff;font-weight:900}
+.matching{display:grid;grid-template-columns:1fr 1fr;gap:18px;width:100%}
+.match-col{display:flex;flex-direction:column;gap:8px}
+.match-card{
+  touch-action:manipulation;
+  min-height:45px;padding:9px 10px;border:2px solid #cbd5e1;background:#fff;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;user-select:none;
+  transition:.15s;cursor:pointer;
+}
+.match-card.selected{border-color:#8b5cf6;background:#f3e8ff;color:#6d28d9}
+.match-card.matched{background:#dcfce7;border-color:#86efac;color:#166534}
+.match-card.wrong-pair{background:#fee2e2;border-color:#f87171;color:#991b1b}
+.drag-area{width:100%;display:flex;flex-direction:column;gap:12px}
+.drag-targets{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.drop-zone{min-width:130px;min-height:58px;border:3px dashed #93c5fd;border-radius:14px;background:#eff6ff;padding:10px;text-align:center;font-weight:900;display:flex;align-items:center;justify-content:center}
+.drop-zone.filled{border-style:solid;background:#dcfce7;border-color:#86efac;color:#166534}
+.tiles{display:flex;justify-content:center;gap:9px;flex-wrap:wrap}
+.tile{padding:11px 15px;touch-action:none;border:2px solid #cbd5e1;border-radius:12px;background:#fff;font-weight:900}
+.tile.selected{background:#dbeafe;border-color:#60a5fa;color:#1d4ed8}
+.feedback{min-height:54px;text-align:center;padding:7px 10px;font-weight:800;line-height:1.5}
+.feedback.good{color:#166534}.feedback.bad{color:#991b1b}.feedback.info{color:#92400e}
+.controls{min-height:46px;display:flex;justify-content:center;align-items:center;gap:10px}
+.next-btn{background:#16a34a;color:#fff;box-shadow:0 5px 0 #15803d}
+.retry-btn{background:#f59e0b;color:#fff;box-shadow:0 5px 0 #b45309}
+.explain{margin-top:4px;padding:8px 12px;border-radius:12px;background:#f8fafc;color:#475569;font-size:.92rem}
+.sticker{position:absolute;bottom:7px;font-size:2rem;z-index:3;pointer-events:none}
+.sticker.left{left:14px}.sticker.right{right:14px}
+.particles{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:20}
+.particle{position:absolute;font-size:1.8rem;animation:arc 1.25s ease-out forwards}
+@keyframes arc{0%{transform:translate(0,0) scale(.5);opacity:0}15%{opacity:1}55%{transform:translate(var(--x),-75px) scale(1)}100%{transform:translate(calc(var(--x)*1.35),45px) scale(.65);opacity:0}}
+.medal{font-size:4.5rem}.summary-score{font-size:2.1rem;font-weight:900;color:#1d4ed8}.summary-text{line-height:1.8;font-weight:700;color:#475569}
+.small-note{font-size:.85rem;color:#64748b;margin-top:10px}
+@media(max-width:700px){
+  .game-wrap{padding:0;align-items:center;justify-content:center;overflow:hidden}.game-container{width:100vw;height:56.25vw;max-height:100vh;border-radius:0;border-width:2px}
+  header{height:54px;flex-basis:54px;padding:0 9px}.badge{padding:6px 8px;font-size:.8rem}
+  .screen{padding:10px 12px}.question-box{font-size:1.05rem;line-height:1.45;min-height:72px}.options{gap:7px}
+  .option{min-height:48px;font-size:.86rem;padding:8px 10px}.answer-area{min-height:135px}.instruction-card{padding:12px}.instruction-card ul{line-height:1.4}
+  .tf button{min-height:58px;font-size:1rem}.match-card{min-height:40px;padding:7px 6px;font-size:.82rem}.matching{gap:8px}.drop-zone{min-width:90px;min-height:48px;font-size:.8rem}.tile{padding:9px 10px;font-size:.82rem}.check-btn{padding:10px 14px}
+}
+</style>
+</head>
+<body>
+<div class="game-wrap">
+<div class="game-container">
+<header id="header">
+  <div id="player" class="player hidden"></div>
+  <div class="header-right">
+    <div id="timerBadge" class="badge timer hidden">⏱️ <span id="timer">00:00</span></div>
+    <div class="badge stars">⭐ <span id="stars">0</span></div>
+    <div class="badge score">💯 <span id="score">0</span></div>
+  </div>
+</header>
+
+<main id="startScreen" class="screen">
+  <div class="start-screen">
+    <div class="math-logo">🔢</div>
+    <h1>HÀNH TRÌNH CHINH PHỤC<br>SỐ CÓ NHIỀU CHỮ SỐ</h1>
+    <div class="subtitle">Toán 4 • Kết nối tri thức</div>
+    <input id="nameInput" class="name-input" maxlength="40" placeholder="✏️ Nhập tên học sinh" autocomplete="off">
+    <button id="startBtn" class="primary-btn">🚀 BẮT ĐẦU</button>
+    <div id="nameError" class="feedback bad"></div>
+  </div>
+  <div class="sticker left">🧮</div><div class="sticker right">🏆</div>
+</main>
+
+<main id="instructionScreen" class="screen hidden">
+  <div class="instruction-screen">
+    <div class="instruction-card">
+      <h2>🎮 SẴN SÀNG CHƯA?</h2>
+      <ul>
+        <li>Đọc và viết các số có nhiều chữ số.</li>
+        <li>So sánh các số đến hàng trăm triệu.</li>
+        <li>Em sẽ gặp các dạng: trắc nghiệm, Đúng/Sai, điền khuyết, nối cặp và kéo thả.</li>
+        <li>Mỗi câu có tối đa <b>3 lần chọn</b>. Đúng ngay lần đầu được thưởng ⭐.</li>
+      </ul>
+    </div>
+    <button id="enterBtn" class="primary-btn">🎮 VÀO TRÒ CHƠI</button>
+  </div>
+  <div class="sticker left">📐</div><div class="sticker right">🧩</div>
+</main>
+
+<main id="quizScreen" class="screen hidden">
+  <div class="topline">
+    <div id="qNumber" class="q-number">Câu 1/10</div>
+    <div class="progress"><div id="progressBar" style="width:10%"></div></div>
+    <div id="attemptLabel" class="attempt-label">Lần 1/3</div>
+  </div>
+  <div id="questionBox" class="question-box"></div>
+  <div id="typeLabel" class="type-label"></div>
+  <div id="answerArea" class="answer-area"></div>
+  <div id="feedback" class="feedback"></div>
+  <div id="controls" class="controls"></div>
+  <div id="explain" class="explain hidden"></div>
+  <div class="sticker left">🔢</div><div class="sticker right">🧩</div>
+</main>
+
+<main id="summaryScreen" class="screen hidden">
+  <div class="summary-screen">
+    <div id="medal" class="medal">🏆</div>
+    <h1 id="summaryTitle">HOÀN THÀNH!</h1>
+    <div id="summaryScore" class="summary-score"></div>
+    <div id="summaryText" class="summary-text"></div>
+    <button id="restartBtn" class="primary-btn">🔄 CHƠI LẠI</button>
+    <div class="small-note">Mỗi lần chơi là một cơ hội để em tiến bộ hơn!</div>
+  </div>
+  <div class="sticker left">📐</div><div class="sticker right">🏆</div>
+</main>
+
+<div id="particles" class="particles"></div>
+</div>
+</div>
+
+<script>
+"use strict";
+
+/* =========================
+   GAME STATE
+========================= */
+const gameState = {
+  playerName: "",
+  currentQuestion: 0,
+  score: 0,
+  stars: 0,
+  correctAnswers: 0,
+  attempts: 0,
+  locked: false,
+  gameStarted: false,
+  startTime: 0,
+  elapsedTime: 0,
+  timerId: null,
+  questions: [],
+  questionCompleted: false
+};
+
+/* =========================
+   QUESTION BANK
+   15 câu, đủ 5 dạng
+========================= */
+const questionBank = [
+  {
+    id:"sc1", type:"singleChoice",
+    question:"Số <b>45 006 018</b> được đọc là:",
+    options:[
+      "Bốn mươi lăm triệu không trăm linh sáu nghìn không trăm mười tám",
+      "Bốn mươi lăm triệu sáu nghìn không trăm mười tám",
+      "Bốn mươi lăm triệu không trăm sáu nghìn mười tám",
+      "Bốn mươi lăm triệu sáu trăm linh mười tám"
+    ],
+    answer:0,
+    explanation:"45 006 018 = 45 triệu, 6 nghìn, 18 đơn vị."
+  },
+  {
+    id:"sc2", type:"singleChoice",
+    question:"Số nào dưới đây lớn nhất?",
+    options:["78 900 005","78 090 500","79 000 001","78 999 999"],
+    answer:2,
+    explanation:"79 triệu lớn hơn mọi số bắt đầu bằng 78 triệu."
+  },
+  {
+    id:"sc3", type:"singleChoice",
+    question:"Số gồm <b>63 triệu, 405 nghìn và 28 đơn vị</b> được viết là:",
+    options:["63 405 028","63 450 028","63 405 280","63 045 028"],
+    answer:0,
+    explanation:"63 triệu + 405 nghìn + 28 = 63 405 028."
+  },
+  {
+    id:"tf1", type:"trueFalse",
+    question:"Số <b>90 005 000</b> lớn hơn số <b>89 999 999</b>.",
+    answer:true,
+    explanation:"90 triệu lớn hơn 89 triệu nên khẳng định đúng."
+  },
+  {
+    id:"tf2", type:"trueFalse",
+    question:"Trong số <b>72 050 100</b>, chữ số 5 có giá trị là <b>50 000</b>.",
+    answer:true,
+    explanation:"Chữ số 5 ở hàng chục nghìn nên có giá trị 50 000."
+  },
+  {
+    id:"tf3", type:"trueFalse",
+    question:"Số <b>100 000 000</b> là số có chín chữ số.",
+    answer:true,
+    explanation:"100 000 000 có 9 chữ số."
+  },
+  {
+    id:"fill1", type:"fillBlank",
+    question:"Viết số: <b>tám mươi triệu không trăm linh năm nghìn hai trăm</b>.",
+    answers:["80 005 200","80005200","80.005.200"],
+    displayAnswer:"80 005 200",
+    explanation:"80 triệu + 5 nghìn + 200 = 80 005 200."
+  },
+  {
+    id:"fill2", type:"fillBlank",
+    question:"Điền dấu thích hợp: <b>56 700 010 &nbsp; ? &nbsp; 56 699 999</b>",
+    answers:[">"],
+    displayAnswer:">",
+    explanation:"Cùng 56 triệu, nhưng 700 010 lớn hơn 699 999."
+  },
+  {
+    id:"fill3", type:"fillBlank",
+    question:"Điền số thích hợp: <b>99 999 999 + 1 = ?</b>",
+    answers:["100000000","100 000 000","100.000.000"],
+    displayAnswer:"100 000 000",
+    explanation:"Số liền sau của 99 999 999 là 100 000 000."
+  },
+  {
+    id:"match1", type:"matching",
+    question:"Ghép mỗi số với số liền sau của nó.",
+    pairs:[
+      {id:"p1",left:"99 999 999",right:"100 000 000"},
+      {id:"p2",left:"45 000 099",right:"45 000 100"},
+      {id:"p3",left:"9 999 999",right:"10 000 000"}
+    ],
+    explanation:"Số liền sau của một số tự nhiên là số đó cộng thêm 1."
+  },
+  {
+    id:"match2", type:"matching",
+    question:"Ghép số với cách đọc đúng.",
+    pairs:[
+      {id:"p4",left:"30 004 020",right:"Ba mươi triệu bốn nghìn hai mươi"},
+      {id:"p5",left:"70 500 006",right:"Bảy mươi triệu năm trăm nghìn không trăm linh sáu"},
+      {id:"p6",left:"81 020 100",right:"Tám mươi mốt triệu hai mươi nghìn một trăm"}
+    ],
+    explanation:"Đọc số theo từng lớp: lớp triệu, lớp nghìn và lớp đơn vị."
+  },
+  {
+    id:"drag1", type:"dragDrop",
+    question:"Sắp xếp các số theo thứ tự từ bé đến lớn.",
+    numbers:["45 006 018","45 060 018","44 999 999"],
+    answer:["44 999 999","45 006 018","45 060 018"],
+    explanation:"So sánh lần lượt từ hàng triệu rồi đến các hàng thấp hơn."
+  },
+  {
+    id:"drag2", type:"dragDrop",
+    question:"Chọn chữ số thích hợp để tạo số lớn nhất từ các chữ số sau.",
+    numbers:["2","7","0","5"],
+    answer:["7","5","2","0"],
+    explanation:"Để tạo số lớn nhất, sắp xếp các chữ số theo thứ tự giảm dần."
+  },
+  {
+    id:"rev1", type:"reverseReasoning",
+    question:"Một số có 8 chữ số, lớn hơn 45 000 000 nhưng nhỏ hơn 46 000 000. Số nào chắc chắn phù hợp?",
+    options:["44 999 999","45 006 018","46 000 001","50 000 000"],
+    answer:1,
+    explanation:"45 006 018 nằm giữa 45 000 000 và 46 000 000."
+  },
+  {
+    id:"rev2", type:"reverseReasoning",
+    question:"Số nào là số nhỏ nhất nhưng vẫn có 9 chữ số?",
+    options:["99 999 999","100 000 000","100 000 001","10 000 000"],
+    answer:1,
+    explanation:"Số nhỏ nhất có 9 chữ số là 100 000 000."
+  }
+];
+
+/* =========================
+   DOM
+========================= */
+const $ = id => document.getElementById(id);
+const screens = {
+  start:$("startScreen"),
+  instruction:$("instructionScreen"),
+  quiz:$("quizScreen"),
+  summary:$("summaryScreen")
+};
+const playerEl=$("player"), timerBadge=$("timerBadge"), timerEl=$("timer");
+const starsEl=$("stars"), scoreEl=$("score");
+const qNumberEl=$("qNumber"), progressEl=$("progressBar"), attemptLabelEl=$("attemptLabel");
+const questionBox=$("questionBox"), typeLabel=$("typeLabel"), answerArea=$("answerArea");
+const feedback=$("feedback"), controls=$("controls"), explain=$("explain");
+
+/* =========================
+   AUDIO
+========================= */
+let audioCtx = null;
+function beep(freq,duration=0.12,type="sine"){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === "suspended") audioCtx.resume().catch(()=>{});
+    const osc=audioCtx.createOscillator();
+    const gain=audioCtx.createGain();
+    osc.type=type; osc.frequency.value=freq;
+    gain.gain.setValueAtTime(0.0001,audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.16,audioCtx.currentTime+0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+duration);
+    osc.connect(gain);gain.connect(audioCtx.destination);
+    osc.start();osc.stop(audioCtx.currentTime+duration+0.02);
+  }catch(e){}
+}
+function successSound(){
+  beep(523,.12); setTimeout(()=>beep(659,.12),100); setTimeout(()=>beep(784,.18),210);
+}
+function errorSound(){beep(220,.16,"square");}
+function victorySound(){
+  [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.18),i*120));
+}
+
+/* =========================
+   UTILS
+========================= */
+function normalizeName(value){
+  return value.trim().toLowerCase().replace(/\s+/g," ").split(" ").filter(Boolean)
+    .map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(" ");
+}
+function normalizeNumberText(v){
+  return String(v).trim().replace(/[.\s,]/g,"");
+}
+function showScreen(screen){
+  Object.values(screens).forEach(s=>s.classList.add("hidden"));
+  screen.classList.remove("hidden");
+}
+function updateHeader(){
+  playerEl.textContent = "👤 Người chơi: " + gameState.playerName;
+  playerEl.classList.toggle("hidden", !gameState.gameStarted);
+  timerBadge.classList.toggle("hidden", !gameState.gameStarted);
+  starsEl.textContent=gameState.stars;
+  scoreEl.textContent=gameState.score;
+}
+function updateTimer(){
+  if(!gameState.gameStarted) return;
+  gameState.elapsedTime=Math.floor((Date.now()-gameState.startTime)/1000);
+  const m=String(Math.floor(gameState.elapsedTime/60)).padStart(2,"0");
+  const s=String(gameState.elapsedTime%60).padStart(2,"0");
+  timerEl.textContent=`${m}:${s}`;
+}
+function clearTimer(){
+  if(gameState.timerId){clearInterval(gameState.timerId);gameState.timerId=null;}
+}
+function startTimer(){
+  clearTimer(); gameState.startTime=Date.now(); gameState.elapsedTime=0; updateTimer();
+  gameState.timerId=setInterval(updateTimer,1000);
+}
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+function chooseTenQuestions(){
+  const groups={
+    singleChoice:shuffle(questionBank.filter(q=>q.type==="singleChoice")),
+    trueFalse:shuffle(questionBank.filter(q=>q.type==="trueFalse")),
+    fillBlank:shuffle(questionBank.filter(q=>q.type==="fillBlank")),
+    matching:shuffle(questionBank.filter(q=>q.type==="matching")),
+    dragDrop:shuffle(questionBank.filter(q=>q.type==="dragDrop")),
+    reverseReasoning:shuffle(questionBank.filter(q=>q.type==="reverseReasoning"))
+  };
+  const chosen=[
+    groups.singleChoice[0],groups.singleChoice[1],
+    groups.trueFalse[0],groups.trueFalse[1],
+    groups.fillBlank[0],groups.fillBlank[1],
+    groups.matching[0],groups.matching[1],
+    groups.dragDrop[0],
+    groups.reverseReasoning[0]
+  ];
+  return shuffle(chosen);
+}
+function setFeedback(text,kind="info"){
+  feedback.className="feedback "+kind;
+  feedback.innerHTML=text;
+}
+function clearQuestionUI(){
+  answerArea.innerHTML="";
+  feedback.innerHTML="";feedback.className="feedback";
+  controls.innerHTML="";
+  explain.innerHTML="";explain.classList.add("hidden");
+}
+
+/* =========================
+   PARTICLES
+========================= */
+function burst(){
+  const container=$("particles");
+  ["⭐","🌸","⭐","🌸","⭐"].forEach((emoji,i)=>{
+    const p=document.createElement("span");p.className="particle";p.textContent=emoji;
+    p.style.left=(44+Math.random()*12)+"%";p.style.top="52%";
+    p.style.setProperty("--x",((Math.random()-.5)*150)+"px");
+    p.style.animationDelay=(i*.06)+"s";
+    container.appendChild(p);setTimeout(()=>p.remove(),1500);
+  });
+}
+
+/* =========================
+   CORE QUESTION FLOW
+========================= */
+function renderQuestion(){
+  if(gameState.currentQuestion>=gameState.questions.length){showSummary();return;}
+  gameState.attempts=0;
+  gameState.locked=false;
+  gameState.questionCompleted=false;
+  clearQuestionUI();
+
+  const q=gameState.questions[gameState.currentQuestion];
+  qNumberEl.textContent=`Câu ${gameState.currentQuestion+1}/10`;
+  progressEl.style.width=((gameState.currentQuestion+1)/10*100)+"%";
+  attemptLabelEl.textContent="Lần 1/3";
+  questionBox.innerHTML=q.question;
+
+  const labels={
+    singleChoice:"🔘 TRẮC NGHIỆM",
+    trueFalse:"⚖️ ĐÚNG / SAI",
+    fillBlank:"✏️ ĐIỀN KHUYẾT",
+    matching:"🧩 NỐI CẶP",
+    dragDrop:"🎯 SẮP XẾP",
+    reverseReasoning:"🧠 SUY LUẬN"
+  };
+  typeLabel.textContent=labels[q.type]||"🎮 THỬ THÁCH";
+  const renderers={singleChoice:renderSingleChoice,trueFalse:renderTrueFalse,fillBlank:renderFillBlank,
+    matching:renderMatching,dragDrop:renderDragDrop,reverseReasoning:renderReverseReasoning};
+  renderers[q.type](q);
+}
+function answerAttempt(isCorrect, extraHtml=""){
+  if(gameState.locked || gameState.questionCompleted) return;
+  gameState.attempts++;
+  attemptLabelEl.textContent=`Lần ${Math.min(gameState.attempts+1,3)}/3`;
+
+  if(isCorrect){
+    completeQuestion(true);
+    return;
+  }
+  errorSound();
+  if(gameState.attempts<3){
+    setFeedback(gameState.attempts===1
+      ?"❌ Chưa đúng. Em hãy suy nghĩ và thử lại nhé!"
+      :"🔎 Vẫn chưa đúng. Hãy thử lần cuối!","bad");
+    showRetryButton();
+  }else{
+    completeQuestion(false,extraHtml);
+  }
+}
+function completeQuestion(isCorrect,extraHtml=""){
+  if(gameState.locked || gameState.questionCompleted) return;
+  gameState.questionCompleted=true;
+  gameState.locked=true;
+
+  const q=gameState.questions[gameState.currentQuestion];
+  if(isCorrect){
+    gameState.correctAnswers++;
+    let pts=gameState.attempts===1?10:(gameState.attempts===2?7:5);
+    gameState.score+=pts;
+    if(gameState.attempts===1) gameState.stars++;
+    setFeedback(`🎉 Chính xác! Em nhận được <b>+${pts} điểm</b>${gameState.attempts===1?" và ⭐ +1":""}.`,"good");
+    successSound();
+    if(gameState.attempts===1) burst();
+  }else{
+    setFeedback("📘 Chưa chính xác. Hãy xem đáp án và lời giải bên dưới.","bad");
+    explain.innerHTML=`<b>Đáp án đúng:</b> ${extraHtml || getCorrectAnswerText(q)}<br><b>💡 Giải thích:</b> ${q.explanation||""}`;
+    explain.classList.remove("hidden");
+  }
+  updateHeader();
+  showNextButton();
+}
+function showRetryButton(){
+  controls.innerHTML="";
+  const btn=document.createElement("button");
+  btn.className="retry-btn";
+  btn.textContent=gameState.attempts===1?"🔄 THỬ LẠI (Lần 1/2)":"🔄 THỬ LẠI (Lần cuối)";
+  btn.onclick=()=>{
+    if(gameState.locked) return;
+    gameState.locked=false;
+    clearQuestionUI();
+    gameState.attempts=gameState.attempts; // giữ số lần đã dùng
+    renderCurrentAttempt();
+  };
+  controls.appendChild(btn);
+}
+function renderCurrentAttempt(){
+  const q=gameState.questions[gameState.currentQuestion];
+  questionBox.innerHTML=q.question;
+  attemptLabelEl.textContent=`Lần ${gameState.attempts+1}/3`;
+  const renderers={singleChoice:renderSingleChoice,trueFalse:renderTrueFalse,fillBlank:renderFillBlank,
+    matching:renderMatching,dragDrop:renderDragDrop,reverseReasoning:renderReverseReasoning};
+  renderers[q.type](q);
+}
+function showNextButton(){
+  controls.innerHTML="";
+  const btn=document.createElement("button");
+  btn.className="next-btn";
+  if(gameState.currentQuestion<9){
+    btn.textContent="➡️ CÂU TIẾP THEO";
+    btn.onclick=()=>{
+      if(!gameState.questionCompleted)return;
+      gameState.currentQuestion++;
+      renderQuestion();
+    };
+  }else{
+    btn.textContent="🏆 XEM KẾT QUẢ";
+    btn.onclick=()=>{
+      if(!gameState.questionCompleted)return;
+      showSummary();
+    };
+  }
+  controls.appendChild(btn);
+}
+function getCorrectAnswerText(q){
+  if(q.type==="singleChoice"||q.type==="reverseReasoning") return q.options[q.answer];
+  if(q.type==="trueFalse") return q.answer?"ĐÚNG":"SAI";
+  if(q.type==="fillBlank") return q.displayAnswer || q.answers[0];
+  if(q.type==="matching") return q.pairs.map(p=>`${p.left} ↔ ${p.right}`).join("<br>");
+  if(q.type==="dragDrop") return q.answer.join(" → ");
+  return "";
+}
+
+/* =========================
+   RENDERERS
+========================= */
+function renderSingleChoice(q){
+  const wrap=document.createElement("div");wrap.className="options";
+  shuffle(q.options.map((text,index)=>({text,index}))).forEach(item=>{
+    const b=document.createElement("button");b.className="option";b.innerHTML=item.text;
+    b.onclick=()=>{
+      if(gameState.locked)return;
+      wrap.querySelectorAll("button").forEach(x=>x.disabled=true);
+      if(item.index===q.answer){b.classList.add("correct");answerAttempt(true);}
+      else{b.classList.add("wrong");answerAttempt(false,q.options[q.answer]);}
+    };
+    wrap.appendChild(b);
+  });
+  answerArea.appendChild(wrap);
+}
+function renderTrueFalse(q){
+  const wrap=document.createElement("div");wrap.className="tf";
+  [{v:true,t:"✅ ĐÚNG"},{v:false,t:"❌ SAI"}].forEach(item=>{
+    const b=document.createElement("button");b.textContent=item.t;
+    b.onclick=()=>{
+      if(gameState.locked)return;
+      if(item.v===q.answer){b.style.background="#dcfce7";answerAttempt(true);}
+      else{b.style.background="#fee2e2";answerAttempt(false,q.answer?"ĐÚNG":"SAI");}
+    };
+    wrap.appendChild(b);
+  });
+  answerArea.appendChild(wrap);
+}
+function renderFillBlank(q){
+  const wrap=document.createElement("div");wrap.className="fill-wrap";
+  const input=document.createElement("input");input.className="fill-input";input.placeholder="Nhập đáp án...";
+  const btn=document.createElement("button");btn.className="check-btn";btn.textContent="✓ KIỂM TRA";
+  const check=()=>{
+    if(gameState.locked)return;
+    const value=input.value.trim();
+    if(!value){setFeedback("✏️ Em hãy nhập đáp án trước nhé!","info");return;}
+    const isCorrect=q.answers.some(a=>normalizeNumberText(a)===normalizeNumberText(value));
+    if(isCorrect){input.disabled=true;btn.disabled=true;answerAttempt(true);}
+    else{answerAttempt(false,q.displayAnswer||q.answers[0]);}
+  };
+  btn.onclick=check;input.onkeydown=e=>{if(e.key==="Enter")check();};
+  wrap.append(input,btn);answerArea.appendChild(wrap);setTimeout(()=>input.focus(),50);
+}
+function renderMatching(q){
+  const area=document.createElement("div");area.className="matching";
+  const leftCol=document.createElement("div");leftCol.className="match-col";
+  const rightCol=document.createElement("div");rightCol.className="match-col";
+  const lefts=shuffle(q.pairs), rights=shuffle(q.pairs);
+  const matchedPairs=new Set();
+  let selected=null;
+
+  function makeCard(pair,side){
+    const card=document.createElement("div");card.className="match-card";
+    card.dataset.pairId=pair.id;card.dataset.side=side;
+    card.textContent=side==="left"?pair.left:pair.right;
+    card.onclick=()=>{
+      if(gameState.locked)return;
+      const id=card.dataset.pairId;
+      if(matchedPairs.has(id)){
+        matchedPairs.delete(id);
+        document.querySelectorAll(`.match-card[data-pair-id="${id}"]`).forEach(c=>c.classList.remove("matched"));
+        return;
+      }
+      if(!selected){
+        selected={id,side,card};
+        card.classList.add("selected");
+        return;
+      }
+      if(selected.side===side){
+        selected.card.classList.remove("selected");
+        selected={id,side,card};
+        card.classList.add("selected");
+        return;
+      }
+      const first=selected;
+      first.card.classList.remove("selected");
+      selected=null;
+      if(first.id===id){
+        matchedPairs.add(id);
+        document.querySelectorAll(`.match-card[data-pair-id="${id}"]`).forEach(c=>{
+          c.classList.remove("selected","wrong-pair");c.classList.add("matched");
+        });
+        beep(660,.1);
+        checkMatchingComplete(matchedPairs,q);
+      }else{
+        card.classList.add("wrong-pair");first.card.classList.add("wrong-pair");
+        setTimeout(()=>{
+          card.classList.remove("wrong-pair");first.card.classList.remove("wrong-pair");
+        },450);
+        answerAttempt(false);
+      }
+    };
+    return card;
+  }
+  lefts.forEach(p=>leftCol.appendChild(makeCard(p,"left")));
+  rights.forEach(p=>rightCol.appendChild(makeCard(p,"right")));
+  area.append(leftCol,rightCol);answerArea.appendChild(area);
+
+  function checkMatchingComplete(set,qdata){
+    if(gameState.locked)return;
+    const allMatched=qdata.pairs.every(pair=>set.has(pair.id));
+    if(allMatched){
+      completeQuestion(true);
+    }
+  }
+}
+function renderDragDrop(q){
+  const wrap=document.createElement("div");wrap.className="drag-area";
+  const instruction=document.createElement("div");instruction.style.textAlign="center";
+  instruction.innerHTML="<b>Chạm thẻ rồi chạm vào vị trí cần đặt, hoặc kéo thả nếu thiết bị hỗ trợ.</b>";
+  const targets=document.createElement("div");targets.className="drag-targets";
+  const tiles=document.createElement("div");tiles.className="tiles";
+  const selected=[];const targetEls=[];const tileEls=[];
+
+  q.answer.forEach((_,i)=>{
+    const z=document.createElement("div");z.className="drop-zone";z.textContent=`Vị trí ${i+1}`;
+    z.dataset.index=i;
+    z.addEventListener("click",()=>{
+      if(gameState.locked)return;
+      if(selected[i]){
+        returnTile(selected[i]);
+        selected[i]=null;
+        delete z.dataset.value;
+        z.textContent=`Vị trí ${i+1}`;
+        z.classList.remove("filled");
+      } else if(pendingTile){
+        placeValue(pendingTile.dataset.value,z);
+        pendingTile=null;
+        tileEls.forEach(t=>t.classList.remove("pending"));
+      }
+    });
+    targetEls.push(z);targets.appendChild(z);
+  });
+
+  let pendingTile=null;
+  shuffle(q.numbers).forEach(num=>{
+    const t=document.createElement("button");t.type="button";t.className="tile";t.textContent=num;
+    t.draggable=true;t.dataset.value=num;
+    t.addEventListener("click",()=>{
+      if(t.disabled||gameState.locked)return;
+      if(pendingTile===t){t.classList.remove("pending");pendingTile=null;return;}
+      tileEls.forEach(x=>x.classList.remove("pending"));
+      pendingTile=t;t.classList.add("pending");
+    });
+    t.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",num);});
+    tileEls.push(t);tiles.appendChild(t);
+  });
+  targetEls.forEach(z=>{
+    z.addEventListener("dragover",e=>e.preventDefault());
+    z.addEventListener("drop",e=>{e.preventDefault();placeValue(e.dataTransfer.getData("text/plain"),z);});
+  });
+  const check=document.createElement("button");check.type="button";check.className="check-btn";check.textContent="✓ KIỂM TRA";
+  check.onclick=()=>{
+    if(gameState.locked)return;
+    const vals=targetEls.map(z=>z.dataset.value||"");
+    if(vals.some(v=>!v)){setFeedback("🎯 Em hãy điền đủ các vị trí trước nhé!","info");return;}
+    const ok=vals.every((v,i)=>normalizeNumberText(v)===normalizeNumberText(q.answer[i]));
+    if(ok)answerAttempt(true);else answerAttempt(false,q.answer.join(" → "));
+  };
+  wrap.append(instruction,targets,tiles,check);answerArea.appendChild(wrap);
+
+  function placeValue(value,z){
+    if(gameState.locked||!value)return;
+    const idx=Number(z.dataset.index);
+    if(selected[idx])returnTile(selected[idx]);
+    const tile=tileEls.find(t=>t.dataset.value===value&&!t.disabled);
+    if(!tile)return;
+    selected[idx]=tile;z.dataset.value=value;z.textContent=value;z.classList.add("filled");tile.disabled=true;tile.classList.remove("pending");tile.classList.add("selected");
+  }
+  function returnTile(tile){tile.disabled=false;tile.classList.remove("selected","pending");}
+}
+function renderReverseReasoning(q){
+  const wrap=document.createElement("div");wrap.className="options";
+  q.options.forEach((text,index)=>{
+    const b=document.createElement("button");b.className="option";b.innerHTML=text;
+    b.onclick=()=>{
+      if(gameState.locked)return;
+      if(index===q.answer){b.classList.add("correct");answerAttempt(true);}
+      else{b.classList.add("wrong");answerAttempt(false,q.options[q.answer]);}
+    };
+    wrap.appendChild(b);
+  });
+  answerArea.appendChild(wrap);
+}
+
+/* =========================
+   SUMMARY / RESET
+========================= */
+function showSummary(){
+  clearTimer();gameState.gameStarted=false;updateHeader();
+  const s=gameState.score;
+  let medal="🎖️",title="CỐ GẮNG THẬT TUYỆT!";
+  if(s>=90){medal="🥇";title="HUY CHƯƠNG VÀNG!"}
+  else if(s>=70){medal="🥈";title="HUY CHƯƠNG BẠC!"}
+  else if(s>=50){medal="🥉";title="HUY CHƯƠNG ĐỒNG!"}
+  $("medal").textContent=medal;
+  $("summaryTitle").textContent=title;
+  $("summaryScore").textContent=`${s} / 100 điểm`;
+  $("summaryText").innerHTML=
+    `👤 <b>${gameState.playerName}</b><br>`+
+    `🎯 Đúng: <b>${gameState.correctAnswers}/10</b> câu<br>`+
+    `⭐ Sao: <b>${gameState.stars}</b><br>`+
+    `⏱️ Thời gian: <b>${formatTime(gameState.elapsedTime)}</b>`;
+  showScreen(screens.summary);victorySound();
+}
+function formatTime(sec){
+  return `${String(Math.floor(sec/60)).padStart(2,"0")}:${String(sec%60).padStart(2,"0")}`;
+}
+function resetGame(){
+  clearTimer();
+  gameState.playerName="";gameState.currentQuestion=0;gameState.score=0;gameState.stars=0;
+  gameState.correctAnswers=0;gameState.attempts=0;gameState.locked=false;gameState.gameStarted=false;
+  gameState.startTime=0;gameState.elapsedTime=0;gameState.questions=[];gameState.questionCompleted=false;
+  $("nameInput").value="";$("nameError").textContent="";
+  updateHeader();showScreen(screens.start);
+}
+
+/* =========================
+   NAVIGATION
+========================= */
+$("startBtn").onclick=()=>{
+  const name=normalizeName($("nameInput").value);
+  if(!name){$("nameError").textContent="Em hãy nhập tên trước khi bắt đầu nhé!";return;}
+  gameState.playerName=name;gameState.gameStarted=true;gameState.currentQuestion=0;
+  gameState.score=0;gameState.stars=0;gameState.correctAnswers=0;gameState.questions=chooseTenQuestions();
+  updateHeader();showScreen(screens.instruction);
+};
+$("enterBtn").onclick=()=>{showScreen(screens.quiz);startTimer();renderQuestion();};
+$("restartBtn").onclick=resetGame;
+$("nameInput").addEventListener("keydown",e=>{if(e.key==="Enter")$("startBtn").click();});
+updateHeader();
+</script>
+</body>
+</html>
